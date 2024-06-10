@@ -8,8 +8,8 @@ import 'package:flame/game.dart';
 import 'package:flame/input.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
-import 'package:pixel_adventure/actors/player.dart';
-import 'package:pixel_adventure/levels/level.dart';
+import 'package:pixel_adventure/components/level.dart';
+import 'package:pixel_adventure/components/player.dart';
 
 const _worldPriority = 1000;
 
@@ -69,13 +69,12 @@ class PixelAdventure extends FlameGame
       case JoystickDirection.right ||
             JoystickDirection.upRight ||
             JoystickDirection.downRight:
-        player.playerDirection = PlayerDirection.right;
+        player.horizontalMovement = 1;
       case JoystickDirection.left ||
             JoystickDirection.upLeft ||
             JoystickDirection.downLeft:
-        player.playerDirection = PlayerDirection.left;
+        player.horizontalMovement = 0;
       case JoystickDirection.idle:
-        player.playerDirection = PlayerDirection.none;
       default:
     }
   }
