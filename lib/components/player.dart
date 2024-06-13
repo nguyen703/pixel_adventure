@@ -16,6 +16,11 @@ class Player extends SpriteAnimationGroupComponent
   late final SpriteAnimation idleAnimation;
   late final SpriteAnimation runAnimation;
   final double stepTime = 0.05;
+  final double _gravity = 9.8;
+  final double _jumpForce = 620;
+  final double _terminalVelocity = 300;
+  bool isOnGround = false;
+  bool hasJumped = false;
 
   double horizontalMovement = 0.0;
   double moveSpeed = 100;
@@ -33,6 +38,8 @@ class Player extends SpriteAnimationGroupComponent
     _updatePlayerState();
     _updatePlayerMovement(dt);
     _checkHorizontalCollision();
+    _applyGravity(dt);
+    _checkVerticalCollision();
     super.update(dt);
   }
 
@@ -49,12 +56,25 @@ class Player extends SpriteAnimationGroupComponent
     horizontalMovement += isLeftKeyPressed ? -1 : 0;
     horizontalMovement += isRightKeyPressed ? 1 : 0;
 
+    hasJumped = keysPressed.contains(LogicalKeyboardKey.space);
+
     return super.onKeyEvent(event, keysPressed);
   }
 
   void _updatePlayerMovement(double dt) {
+    if (hasJumped && isOnGround) _playerJump(dt);
+
     velocity.x = horizontalMovement * moveSpeed;
     position.x += velocity.x * dt;
+  }
+
+  void _playerJump(double dt) {
+    if (isOnGround) {
+      velocity.y = -_jumpForce;
+      position.y += velocity.y * dt;
+      isOnGround = false;
+      hasJumped = false;
+    }
   }
 
   void _updatePlayerState() {
@@ -106,5 +126,29 @@ class Player extends SpriteAnimationGroupComponent
         textureSize: Vector2.all(32),
       ),
     );
+  }
+
+  void _applyGravity(double dt) {
+    velocity.y += _gravity * _terminalVelocity * dt;
+    velocity.y = velocity.y.clamp(-_jumpForce, _terminalVelocity);
+    position.y += velocity.y * dt;
+  }
+
+  void _checkVerticalCollision() {
+    for (final block in collisionBlocks) {
+      if (checkCollision(this, block)) {
+        if (!block.isPlatform) {
+          if (velocity.y > 0) {
+            position.y = block.y - height;
+            velocity.y = 0;
+            isOnGround = true;
+            break;
+          } else if (velocity.y < 0) {
+            position.y = block.y + block.height;
+            velocity.y = 0;
+          }
+        }
+      }
+    }
   }
 }
