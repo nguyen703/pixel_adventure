@@ -1,8 +1,10 @@
 import 'dart:async';
 
+import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 import 'package:flutter/services.dart';
 import 'package:pixel_adventure/components/collision_block.dart';
+import 'package:pixel_adventure/components/player_hitbox.dart';
 import 'package:pixel_adventure/components/utils.dart';
 import 'package:pixel_adventure/pixel_adventure.dart';
 
@@ -15,6 +17,9 @@ class Player extends SpriteAnimationGroupComponent
   String character;
   late final SpriteAnimation idleAnimation;
   late final SpriteAnimation runAnimation;
+  late final SpriteAnimation jumpAnimation;
+  late final SpriteAnimation fallAnimation;
+
   final double stepTime = 0.05;
   final double _gravity = 9.8;
   final double _jumpForce = 620;
@@ -26,9 +31,19 @@ class Player extends SpriteAnimationGroupComponent
   double moveSpeed = 100;
   Vector2 velocity = Vector2.zero();
   List<CollisionBlock> collisionBlocks = [];
+  PlayerHitbox hitbox = PlayerHitbox(
+    offsetX: 4,
+    offsetY: 6,
+    width: 24,
+    height: 26,
+  );
 
   @override
   FutureOr<void> onLoad() {
+    add(RectangleHitbox(
+      position: Vector2(hitbox.offsetX, hitbox.offsetY),
+      size: Vector2(hitbox.width, hitbox.height),
+    ));
     _loadAllAnimations();
     return super.onLoad();
   }
@@ -80,38 +95,83 @@ class Player extends SpriteAnimationGroupComponent
   void _updatePlayerState() {
     PlayerState playerState = PlayerState.idle;
 
-    if (velocity.x < 0 && scale.x > 0) {
+    if (velocity.isGoingLeft() && scale.x > 0) {
       flipHorizontallyAroundCenter();
-    } else if (velocity.x > 0 && scale.x < 0) {
+    } else if (velocity.isGoingRight() && scale.x < 0) {
       flipHorizontallyAroundCenter();
     }
 
     if (velocity.x != 0) playerState = PlayerState.run;
+
+    if (velocity.y < 0) {
+      playerState = PlayerState.jump;
+    } else if (velocity.y > 0) {
+      if (velocity.y > 0) playerState = PlayerState.fall;
+    }
 
     current = playerState;
   }
 
   void _checkHorizontalCollision() {
     for (final block in collisionBlocks) {
-      if (checkCollision(this, block)) {
-        if (!block.isPlatform) {
-          if (velocity.x > 0) {
-            position.x = block.x - width;
-          } else if (velocity.x < 0) {
-            position.x = block.x + block.width + width;
+      if (checkCollision(this, block, hitbox)) {
+        if (block.isPlatform) {
+          // Check if player is on top of the platform
+        } else {
+          if (velocity.isGoingRight()) {
+            position.x = block.x - hitbox.offsetX - hitbox.width;
+          } else if (velocity.isGoingLeft()) {
+            position.x = block.x + block.width + hitbox.offsetX + hitbox.width;
           }
         }
       }
     }
   }
 
+  void _checkVerticalCollision() {
+    for (final block in collisionBlocks) {
+      if (checkCollision(this, block, hitbox)) {
+        if (block.isPlatform) {
+          if (velocity.y > 0) {
+            if (position.y + hitbox.height < block.y + block.height) {
+              position.y = block.y - height;
+              velocity.y = 0;
+              isOnGround = true;
+              break;
+            }
+          }
+        } else {
+          if (velocity.y > 0) {
+            position.y = block.y - height;
+            velocity.y = 0;
+            isOnGround = true;
+            break;
+          } else if (velocity.y < 0) {
+            velocity.y = 0;
+            position.y = block.y + block.height - hitbox.offsetY;
+          }
+        }
+      }
+    }
+  }
+
+  void _applyGravity(double dt) {
+    velocity.y += _gravity * _terminalVelocity * dt;
+    velocity.y = velocity.y.clamp(-_jumpForce, _terminalVelocity);
+    position.y += velocity.y * dt;
+  }
+
   void _loadAllAnimations() {
     idleAnimation = _spriteAnimation('Idle', 11);
     runAnimation = _spriteAnimation('Run', 12);
+    jumpAnimation = _spriteAnimation('Jump', 1);
+    fallAnimation = _spriteAnimation('Fall', 1);
 
     animations = {
       PlayerState.idle: idleAnimation,
       PlayerState.run: runAnimation,
+      PlayerState.jump: jumpAnimation,
+      PlayerState.fall: fallAnimation,
     };
 
     current = PlayerState.idle;
@@ -126,29 +186,5 @@ class Player extends SpriteAnimationGroupComponent
         textureSize: Vector2.all(32),
       ),
     );
-  }
-
-  void _applyGravity(double dt) {
-    velocity.y += _gravity * _terminalVelocity * dt;
-    velocity.y = velocity.y.clamp(-_jumpForce, _terminalVelocity);
-    position.y += velocity.y * dt;
-  }
-
-  void _checkVerticalCollision() {
-    for (final block in collisionBlocks) {
-      if (checkCollision(this, block)) {
-        if (!block.isPlatform) {
-          if (velocity.y > 0) {
-            position.y = block.y - height;
-            velocity.y = 0;
-            isOnGround = true;
-            break;
-          } else if (velocity.y < 0) {
-            position.y = block.y + block.height;
-            velocity.y = 0;
-          }
-        }
-      }
-    }
   }
 }

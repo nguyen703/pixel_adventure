@@ -9,5 +9,8 @@ void main() async {
   await Flame.device.setLandscapeLeftOnly();
 
   final PixelAdventure game = PixelAdventure();
-  runApp(GameWidget(game: game));
+  runApp(Focus(
+      onKeyEvent: (_, __) =>
+          KeyEventResult.handled, // Avoid beep sound on MacOS
+      child: GameWidget(game: game)));
 }
