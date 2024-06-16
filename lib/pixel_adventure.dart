@@ -33,7 +33,7 @@ class PixelAdventure extends FlameGame
     final world = Level(levelName: 'level-01', player: player);
 
     cam = CameraComponent(
-      viewport: FixedResolutionViewport(resolution: Vector2(640, 360)),
+      viewport: FixedSizeViewport(640, 360),
       world: world,
     );
     cam.priority = _worldPriority;
