@@ -14,7 +14,7 @@ import 'package:pixel_adventure/components/player.dart';
 const _worldPriority = 1000;
 
 class PixelAdventure extends FlameGame
-    with HasKeyboardHandlerComponents, DragCallbacks {
+    with HasKeyboardHandlerComponents, DragCallbacks, HasCollisionDetection {
   PixelAdventure();
 
   late final CameraComponent cam;
