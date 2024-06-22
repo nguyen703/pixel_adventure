@@ -7,6 +7,7 @@ import 'package:flutter/rendering.dart';
 import 'package:pixel_adventure/components/collision_block.dart';
 import 'package:pixel_adventure/components/fruit.dart';
 import 'package:pixel_adventure/components/player.dart';
+import 'package:pixel_adventure/components/saw.dart';
 
 class Level extends World with HasGameReference {
   Level({super.key, required this.player, required this.levelName});
@@ -69,8 +70,20 @@ class Level extends World with HasGameReference {
               position: spawnPoint.position,
               size: spawnPoint.size,
             );
-
             add(fruit);
+          case 'Saw':
+            final isVertical = spawnPoint.properties.getValue('isVertical');
+            final offNeg = spawnPoint.properties.getValue('offNeg');
+            final offPos = spawnPoint.properties.getValue('offPos');
+
+            final saw = Saw(
+              position: spawnPoint.position,
+              size: spawnPoint.size,
+              isVertical: isVertical,
+              offNeg: offNeg,
+              offPos: offPos,
+            );
+            add(saw);
         }
       }
     }
